@@ -56,7 +56,7 @@ func getCep(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, cep)
 		break
 	case <-time.After(time.Second * 1):
-		io.WriteString(w, "timeout")
+		w.WriteHeader(http.StatusRequestTimeout)
 		break
 	}
 
