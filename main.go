@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -11,6 +12,8 @@ import (
 )
 
 func request(url string) string {
+	log := fmt.Sprintf("[request] %s...", url)
+	fmt.Println(log)
 	resp, err := http.Get(url)
 	if err != nil {
 		panic(err)
@@ -35,18 +38,26 @@ func viaCep(cep string, ch chan<- string) {
 func getCep(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	cepCh := make(chan string)
+	viaCh := make(chan string)
+	apiCh := make(chan string)
 
 	cep := chi.URLParam(r, "cep")
 
-	go viaCep(cep, cepCh)
-	go apiCep(cep, cepCh)
+	go viaCep(cep, viaCh)
+	go apiCep(cep, apiCh)
 
 	select {
-	case cep := <-cepCh:
+	case cep := <-viaCh:
+		fmt.Println("[getCep] used viaCep...")
 		io.WriteString(w, cep)
+		break
+	case cep := <-apiCh:
+		fmt.Println("[getCep] used apicep...")
+		io.WriteString(w, cep)
+		break
 	case <-time.After(time.Second * 1):
 		io.WriteString(w, "timeout")
+		break
 	}
 
 }
